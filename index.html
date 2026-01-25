@@ -45,31 +45,6 @@
     footer { padding: 24px 16px; border-top: 1px solid #eee; color: #555; }
   </style>
 </head>
-  
-<script>
-  document.querySelectorAll('.attend-btn').forEach(button => {
-    button.addEventListener('click', function (e) {
-      e.preventDefault();
-
-      if (this.classList.contains('active')) return;
-
-      const card = this.closest('.card');
-      const countSpan = card.querySelector('.count');
-
-      let count = parseInt(countSpan.textContent, 10);
-      if (isNaN(count)) count = 0;
-
-      countSpan.textContent = count + 1;
-
-      this.textContent = 'Ci sei ✔';
-      this.classList.add('active');
-      this.style.borderColor = '#0a7';
-      this.style.color = '#0a7';
-    });
-  });
-</script>
-
-
 <body>
   <header>
     <div class="wrap">
@@ -114,24 +89,24 @@
       </button>
     </div>
 
-   <article class="card">
-  <p class="title">⚽ Calcio al parco (tranquillo)</p>
-  <p class="meta">19:00 • Parco Sempione • ci si trova e si gioca</p
-  <p class="meta"><span class="count">3</span> persone ci sono</p>
+    <section class="grid">
+      <article class="card">
+        <p class="title">⚽ Calcio al parco (tranquillo)</p>
+        <p class="meta">19:00 • Parco Sempione • ci si trova e si gioca</p>
+        <p class="meta"><span class="count">3</span> persone ci sono</p>
 
-  <div class="tags">
-    <span class="tag">🟢 Aperto a chi non si conosce</span>
-    <span class="tag">€0</span>
-    <span class="tag">Porta: niente</span>
-    <span class="tag">Facile</span>
-  </div>
+        <div class="tags">
+          <span class="tag">🟢 Aperto a chi non si conosce</span>
+          <span class="tag">€0</span>
+          <span class="tag">Porta: niente</span>
+          <span class="tag">Facile</span>
+        </div>
 
-  <div class="cta">
-    <a class="primary attend-btn" href="#">Ci sono</a>
-    <a href="https://www.google.com/maps/search/?api=1&query=Parco%20Sempione%20Milano" target="_blank">Apri su Maps</a>
-  </div>
-</article>
-
+        <div class="cta">
+          <a class="primary attend-btn" href="#">Ci sono</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=Parco%20Sempione%20Milano" target="_blank">Apri su Maps</a>
+        </div>
+      </article>
 
       <article class="card">
         <p class="title">♟️ Scacchi al bar</p>
@@ -164,8 +139,7 @@
           <a href="https://www.google.com/maps/search/?api=1&query=Darsena%20Milano" target="_blank">Apri su Maps</a>
         </div>
       </article>
-    </div>
-  
+    </section>
   </main>
 
   <footer>
@@ -174,5 +148,29 @@
       <p class="small">Obiettivo: ridurre l’attrito tra “sono le 18:00 e non ho piani” e l'uscire di casa.</p>
     </div>
   </footer>
+
+  <script>
+    document.querySelectorAll('.attend-btn').forEach(button => {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        if (this.classList.contains('active')) return;
+
+        const card = this.closest('.card');
+        const countSpan = card.querySelector('.count');
+
+        let count = parseInt(countSpan.textContent, 10);
+        if (isNaN(count)) count = 0;
+
+        countSpan.textContent = count + 1;
+
+        this.textContent = 'Ci sei ✔';
+        this.classList.add('active');
+        this.style.borderColor = '#0a7';
+        this.style.color = '#0a7';
+      });
+    });
+  </script>
 </body>
 </html>
+
