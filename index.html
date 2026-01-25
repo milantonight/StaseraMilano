@@ -45,6 +45,28 @@
     footer { padding: 24px 16px; border-top: 1px solid #eee; color: #555; }
   </style>
 </head>
+  
+<script>
+  document.querySelectorAll('.attend-btn').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+
+      if (this.classList.contains('active')) return;
+
+      const card = this.closest('.card');
+      const countEl = card.querySelector('.count');
+
+      let count = parseInt(countEl.textContent, 10);
+      count++;
+
+      countEl.textContent = count;
+      this.textContent = 'Ci sei ✔';
+      this.classList.add('active');
+      this.style.borderColor = '#0a7';
+      this.style.color = '#0a7';
+    });
+  });
+</script>
 
 <body>
   <header>
@@ -101,9 +123,10 @@
           <span class="tag">Facile</span>
         </div>
         <div class="cta">
-          <a class="primary" href="#" onclick="alert('V1: questo diventerà un vero pulsante “Ci vado”.'); return false;">Ci vado</a>
+          <a class="primary attend-btn" href="#" data-count="3">Ci sono</a>
           <a href="https://www.google.com/maps/search/?api=1&query=Parco%20Sempione%20Milano" target="_blank">Apri su Maps</a>
         </div>
+        <p class="meta"><span class="count">3</span> persone già ci sono</p>
       </article>
 
       <article class="card">
@@ -116,9 +139,10 @@
           <span class="tag">Indoor</span>
         </div>
         <div class="cta">
-          <a class="primary" href="#" onclick="alert('V1: questo diventerà un vero pulsante “Ci vado”.'); return false;">Ci vado</a>
+          <a class="primary attend-btn" href="#" data-count="3">Ci sono</a>
           <a href="https://www.google.com/maps/search/?api=1&query=Isola%20Milano%20bar" target="_blank">Apri su Maps</a>
         </div>
+         <p class="meta"><span class="count">3</span> persone già ci sono</p>
       </article>
 
       <article class="card">
@@ -131,11 +155,12 @@
           <span class="tag">Zero pressione</span>
         </div>
         <div class="cta">
-          <a class="primary" href="#" onclick="alert('V1: questo diventerà un vero pulsante “Ci vado”.'); return false;">Ci vado</a>
+          <a class="primary attend-btn" href="#" data-count="3">Ci sono</a>
           <a href="https://www.google.com/maps/search/?api=1&query=Darsena%20Milano" target="_blank">Apri su Maps</a>
         </div>
       </article>
     </div>
+     <p class="meta"><span class="count">3</span> persone già ci sono</p>
   </main>
 
   <footer>
