@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Milano Stasera</title>
+  <meta name="description" content="Cosa succede vicino a te stasera? Piani semplici, economici, senza inviti. Stranieri benvenuti." />
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; line-height: 1.35; }
+    header { padding: 24px 16px; border-bottom: 1px solid #eee; }
+    .wrap { max-width: 960px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    .sub { margin: 0; color: #444; }
+
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .badge { border: 1px solid #ddd; border-radius: 999px; padding: 6px 10px; font-size: 13px; background: #fafafa; }
+
+    main { padding: 16px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0 18px; }
+    select, button {
+      padding: 10px 12px; border: 1px solid #ccc; border-radius: 10px;
+      background: white; font-size: 14px;
+    }
+    button { cursor: pointer; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .card { border: 1px solid #eee; border-radius: 14px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .title { font-weight: 700; font-size: 16px; margin: 0 0 6px; }
+    .meta { color: #555; font-size: 14px; margin: 0 0 10px; }
+
+    .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+    .tag { font-size: 12px; border-radius: 999px; padding: 5px 9px; border: 1px solid #e6e6e6; background: #fff; }
+
+    .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .cta a {
+      text-decoration: none; border: 1px solid #ccc; padding: 9px 11px;
+      border-radius: 10px; color: #111;
+    }
+    .cta a.primary { border-color: #111; font-weight: 600; }
+
+    .note { margin-top: 12px; color: #444; font-size: 14px; }
+    .small { font-size: 13px; }
+
+    footer { padding: 24px 16px; border-top: 1px solid #eee; color: #555; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Cosa succede vicino a te stasera?</h1>
+      <p class="sub">Milano • Stasera (18:00–23:00) • Piani semplici, economici, senza inviti.</p>
+
+      <div class="badges">
+        <span class="badge">🟢 Stranieri benvenuti</span>
+        <span class="badge">€0–€10</span>
+        <span class="badge">Vicino a te</span>
+        <span class="badge">Nessun requisito</span>
+      </div>
+
+      <p class="note"><strong>Tutti iniziano da sconosciuti.</strong> Qui basta presentarsi.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="controls">
+      <label>
+        Zona:
+        <select aria-label="Seleziona una zona">
+          <option selected>Vicino a me (in arrivo)</option>
+          <option>Navigli</option>
+          <option>Porta Romana</option>
+          <option>Isola</option>
+          <option>Duomo</option>
+        </select>
+      </label>
+
+      <label>
+        Orario:
+        <select aria-label="Seleziona un orario">
+          <option selected>Stasera</option>
+          <option>Adesso</option>
+          <option>Tra 1 ora</option>
+        </select>
+      </label>
+
+      <button type="button" title="Placeholder per la V1" onclick="alert('V1: “Crea evento” arriva dopo. Per ora stiamo validando l’idea con esempi semplici.');">
+        + Crea un evento (presto)
+      </button>
+    </div>
+
+    <div class="grid">
+      <article class="card">
+        <p class="title">⚽ Calcio al parco (tranquillo)</p>
+        <p class="meta">19:00 • Parco Sempione • vibe “ci si trova e si gioca”</p>
+        <div class="tags">
+          <span class="tag">🟢 Stranieri benvenuti</span>
+          <span class="tag">€0</span>
+          <span class="tag">Porta: niente</span>
+          <span class="tag">Facile</span>
+        </div>
+        <div class="cta">
+          <a class="primary" href="#" onclick="alert('V1: questo diventerà un vero pulsante “Ci vado” con contatore.'); return false;">Ci vado</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=Parco%20Sempione%20Milano" target="_blank" rel="noreferrer">Apri su Maps</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="title">♟️ Scacchi al bar (principianti ok)</p>
+        <p class="meta">18:30 • Zona Isola • si chiacchiera e si gioca</p>
+        <div class="tags">
+          <span class="tag">🟢 Stranieri benvenuti</span>
+          <span class="tag">€5 max</span>
+          <span class="tag">Nessun invito</span>
+          <span class="tag">Indoor</span>
+        </div>
+        <div class="cta">
+          <a class="primary" href="#" onclick="alert('V1: questo diventerà un vero pulsante “Ci vado” con contatore.'); return false;">Ci vado</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=Isola%20Milano%20bar" target="_blank" rel="noreferrer">Apri su Maps</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="title">🏃 Corsa easy + due chiacchiere</p>
+        <p class="meta">20:00 • Darsena • 5–6 km, ritmo facile</p>
+        <div class="tags">
+          <span class="tag">🟢 Stranieri benvenuti</span>
+          <span class="tag">€0</span>
+          <span class="tag">No attrezzatura</span>
+          <span class="tag">Low pressure</span>
+        </div>
+        <div class="cta">
+          <a class="primary" href="#" onclick="alert('V1: questo diventerà un vero pulsante “Ci vado” con contatore.'); return false;">Ci vado</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=Darsena%20Milano" target="_blank" rel="noreferrer">Apri su Maps</a>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p class="small"><strong>Regola V1:</strong> ogni evento deve essere economico, vicino e dichiarare chiaramente <em>“Stranieri benvenuti”</em>.</p>
+      <p class="small">Obiettivo: ridurre l’attrito tra “Sono le 18:00 e non ho piani” e uscire di casa.</p>
+    </div>
+  </footer>
+</body>
+</html>
