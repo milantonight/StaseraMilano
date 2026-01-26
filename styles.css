@@ -1,0 +1,40 @@
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; line-height: 1.35; }
+header { padding: 24px 16px; border-bottom: 1px solid #eee; }
+.wrap { max-width: 960px; margin: 0 auto; }
+h1 { margin: 0 0 8px; font-size: 32px; }
+.sub { margin: 0; color: #444; }
+
+.badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.badge { border: 1px solid #ddd; border-radius: 999px; padding: 6px 10px; font-size: 13px; background: #fafafa; }
+
+.note { margin-top: 12px; color: #444; font-size: 14px; }
+
+main { padding: 16px; }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0 18px; }
+select, button {
+  padding: 10px 12px; border: 1px solid #ccc; border-radius: 10px;
+  background: white; font-size: 14px;
+}
+button { cursor: pointer; }
+
+.map-wrap { margin: 10px 0 18px; }
+#map { height: 420px; border: 1px solid #eee; border-radius: 14px; }
+.small { font-size: 13px; }
+.hint { margin-top: 10px; color: #555; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.card { border: 1px solid #eee; border-radius: 14px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.title { font-weight: 700; font-size: 16px; margin: 0 0 6px; }
+.meta { color: #555; font-size: 14px; margin: 0 0 10px; }
+
+.tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.tag { font-size: 12px; border-radius: 999px; padding: 5px 9px; border: 1px solid #e6e6e6; background: #fff; }
+
+.cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.cta a {
+  text-decoration: none; border: 1px solid #ccc; padding: 9px 11px;
+  border-radius: 10px; color: #111;
+}
+.cta a.primary { border-color: #111; font-weight: 600; }
+
+footer { padding: 24px 16px; border-top: 1px solid #eee; color: #555; }
