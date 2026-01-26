@@ -109,10 +109,12 @@
     </div>
 
     <section class="grid">
-      <article class="card">
+      <article class="card" id="event-sempione">
+>
         <p class="title">⚽ Calcio al parco (tranquillo)</p>
         <p class="meta">19:00 • Parco Sempione • ci si trova e si gioca</p>
         <p class="meta"><span class="count">3</span> persone ci sono</p>
+      
 
         <div class="tags">
           <span class="tag">🟢 Aperto a chi non si conosce</span>
@@ -167,6 +169,76 @@
       <p class="small">Obiettivo: ridurre l’attrito tra “sono le 18:00 e non ho piani” e l'uscire di casa.</p>
     </div>
   </footer>
+<script>
+  // Coordinate base Milano (Duomo)
+  const map = L.map('map').setView([45.4642, 9.1900], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  const events = [
+    {
+      id: 'event-sempione',
+      title: '⚽ Calcio al parco (tranquillo)',
+      time: '19:00',
+      place: 'Parco Sempione',
+      coords: [45.4765, 9.1743],
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Parco%20Sempione%20Milano'
+    },
+    {
+      id: 'event-isola',
+      title: '♟️ Scacchi al bar',
+      time: '18:30',
+      place: 'Zona Isola',
+      coords: [45.4859, 9.1900],
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Isola%20Milano%20bar'
+    },
+    {
+      id: 'event-darsena',
+      title: '🏃 Corsa easy + due chiacchiere',
+      time: '20:00',
+      place: 'Darsena',
+      coords: [45.4526, 9.1778],
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Darsena%20Milano'
+    }
+  ];
+
+  function scrollToEvent(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.style.outline = '2px solid #111';
+    setTimeout(() => (el.style.outline = 'none'), 1200);
+  }
+
+  events.forEach(ev => {
+    const popupHtml = `
+      <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
+        <div style="font-weight:700;margin-bottom:4px;">${ev.title}</div>
+        <div style="color:#555;margin-bottom:8px;">${ev.time} • ${ev.place}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button data-jump="${ev.id}" style="padding:8px 10px;border:1px solid #111;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;">
+            Vedi dettagli
+          </button>
+          <a href="${ev.mapsUrl}" target="_blank" rel="noreferrer"
+             style="display:inline-block;padding:8px 10px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;">
+            Apri su Maps
+          </a>
+        </div>
+      </div>
+    `;
+
+    const marker = L.marker(ev.coords).addTo(map);
+    marker.bindPopup(popupHtml);
+
+    marker.on('popupopen', () => {
+      const btn = document.querySelector(`button[data-jump="${ev.id}"]`);
+      if (btn) btn.onclick = () => scrollToEvent(ev.id);
+    });
+  });
+</script>
 
   <script>
     document.querySelectorAll('.attend-btn').forEach(button => {
