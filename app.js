@@ -144,16 +144,6 @@ function setupMap() {
   }
 }
 
-// =======================
-// Placeholder button
-// =======================
-function setupCreateEventPlaceholder() {
-  const btn = document.getElementById('createEventBtn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    alert('V1: “Crea evento” arriva dopo. Per ora stiamo validando l’idea.');
-  });
-}
 
 // =======================
 // Init
@@ -161,7 +151,7 @@ function setupCreateEventPlaceholder() {
 document.addEventListener('DOMContentLoaded', () => {
   setupAttendance();
   setupMap();
-  setupCreateEventPlaceholder();
+  setupCreateEventButton()
 });
 // =======================
 // Storage keys
