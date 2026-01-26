@@ -38,3 +38,7 @@ button { cursor: pointer; }
 .cta a.primary { border-color: #111; font-weight: 600; }
 
 footer { padding: 24px 16px; border-top: 1px solid #eee; color: #555; }
+
+.h2 { margin: 18px 0 10px; font-size: 18px; }
+.user-events { margin-bottom: 18px; }
+
