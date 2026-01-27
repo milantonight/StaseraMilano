@@ -213,7 +213,7 @@ function scrollToEvent(id) {
 }
 
 function setupNearMeSelect() {
-  const select = document.querySelector('.controls select');
+  const select = document.getElementById('areaSelect');
   if (!select || !map) return;
 
   select.addEventListener('change', () => {
@@ -303,6 +303,50 @@ function focusNearestEvent() {
 
   scrollToEvent(best.id);
 }
+// =======================
+// Filters (Solo mode)
+// =======================
+const SOLO_KEY = 'staseraMilano_soloMode_v1';
+
+function setupSoloMode() {
+  const cb = document.getElementById('soloMode');
+  if (!cb) return;
+
+  // restore
+  const saved = loadJSON(SOLO_KEY, { on: false });
+  cb.checked = !!saved.on;
+
+  // apply once on load
+  applySoloFilter(cb.checked);
+
+  cb.addEventListener('change', () => {
+    saveJSON(SOLO_KEY, { on: cb.checked });
+    applySoloFilter(cb.checked);
+  });
+}
+
+function applySoloFilter(on) {
+  const cards = Array.from(document.querySelectorAll('.card'));
+  cards.forEach(card => {
+    if (!on) {
+      card.hidden = false;
+      return;
+    }
+
+    // Heuristica semplice: se dentro ai tag/meta c'è una di queste parole, è "ansia bassa"
+    const text = card.innerText.toLowerCase();
+    const ok =
+      text.includes('volti nuovi') ||
+      text.includes('zero pressione') ||
+      text.includes('nessun invito') ||
+      text.includes('principianti') ||
+      text.includes('tranquillo') ||
+      text.includes('easy');
+
+    card.hidden = !ok;
+  });
+}
+
 
 // =======================
 // User events (Create Event local-only)
