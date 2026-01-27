@@ -238,6 +238,7 @@ function requestUserLocationImmediately(focusNearest = false) {
       }
 
       map.setView([userLocation.lat, userLocation.lng], 14);
+      updateDistanceBadges();
 
       if (focusNearest) focusNearestEvent();
     },
@@ -262,6 +263,35 @@ function distanceMeters(a, b) {
   const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
   return R * c;
 }
+function formatDistance(meters) {
+  if (!Number.isFinite(meters)) return '—';
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+
+// stima rozza ma utile: 4.8 km/h ~ 80 m/min
+function estimateWalkMinutes(meters) {
+  if (!Number.isFinite(meters)) return null;
+  return Math.max(1, Math.round(meters / 80));
+}
+
+function updateDistanceBadges() {
+  if (!userLocation) return;
+
+  const cards = getAllEventCards();
+  cards.forEach(card => {
+    const lat = parseFloat(card.dataset.lat);
+    const lng = parseFloat(card.dataset.lng);
+    const d = distanceMeters(userLocation, { lat, lng });
+
+    const distEl = card.querySelector('[data-distance]');
+    if (!distEl) return;
+
+    const mins = estimateWalkMinutes(d);
+    distEl.textContent = `📍 ${formatDistance(d)} • ~${mins} min a piedi`;
+  });
+}
+
 
 function getAllEventCards() {
   return Array.from(document.querySelectorAll('.card')).filter(card => {
@@ -382,7 +412,9 @@ function buildUserEventCard(ev) {
   card.innerHTML = `
     <p class="title">${escapeHtml(ev.title)}</p>
     <p class="meta">${escapeHtml(ev.time)} • ${escapeHtml(ev.place)} • creato da te</p>
-    <p class="meta"><span class="count">${escapeHtml(String(ev.initialCount || 0))}</span> persone ci sono</p>
+    <p class="meta distance" data-distance>📍 —</p>
+    <p class="meta"><span class="count">${escapeHtml(String(ev.initialCount || 0))}</span> già persone ci sono</p>
+  
 
     <div class="tags">
       <span class="tag">🟢 Volti Nuovi Benvenuti!</span>
