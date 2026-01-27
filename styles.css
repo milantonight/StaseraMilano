@@ -42,3 +42,6 @@ footer { padding: 24px 16px; border-top: 1px solid #eee; color: #555; }
 .h2 { margin: 18px 0 10px; font-size: 18px; }
 .user-events { margin-bottom: 18px; }
 
+.toggle { display:flex; gap:8px; align-items:center; font-size:14px; }
+.attend-btn.active { border-color:#0a7; color:#0a7; }
+
