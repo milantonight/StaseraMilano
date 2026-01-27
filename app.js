@@ -412,7 +412,6 @@ let pendingEventDraft = null;
 let pendingClickHandler = null;
 
 function openCreateEventDialog() {
-  // 1) Raccogli i dati base (senza coordinate)
   const title = prompt('Titolo evento (es: "Pizza + film", "Corsa easy", "Scacchi al bar")');
   if (!title) return;
 
@@ -428,7 +427,6 @@ function openCreateEventDialog() {
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place + ' Milano')}`;
 
-  // 2) Mettiamo in bozza, e chiediamo click su mappa
   pendingEventDraft = {
     id: 'user-' + Date.now(),
     title,
@@ -449,18 +447,17 @@ function openCreateEventDialog() {
 
   enableMapPickMode();
 }
+
 function enableMapPickMode() {
-  // Evita di attaccare più listener
+  // Rimuovi eventuale handler precedente
   if (pendingClickHandler) {
     map.off('click', pendingClickHandler);
     pendingClickHandler = null;
   }
 
-  // Feedback immediato
   const btn = document.getElementById('createEventBtn');
-  if (btn) btn.textContent = 'Ora clicca un punto sulla mappa…';
+  if (btn) btn.textContent = 'Clicca un punto sulla mappa…';
 
-  // Cambia cursore mappa (senza CSS extra)
   const mapEl = document.getElementById('map');
   if (mapEl) mapEl.style.cursor = 'crosshair';
 
@@ -468,20 +465,18 @@ function enableMapPickMode() {
 
   pendingClickHandler = function (e) {
     const { lat, lng } = e.latlng;
-
-    // Completa bozza con coordinate
     const ev = { ...pendingEventDraft, lat, lng };
 
-    // Salva
+    // Salva evento (local-only)
     const events = loadJSON(EVENTS_KEY, []);
     events.unshift(ev);
     saveJSON(EVENTS_KEY, events);
 
-    // Render card + marker
+    // Render + marker
     setupUserEventsFromStorage();
     addMarkerFromEvent(ev);
 
-    // Torna “normale”
+    // Reset modalità
     disableMapPickMode();
 
     // Vai all’evento creato
