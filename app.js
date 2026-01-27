@@ -239,6 +239,8 @@ function attachAttendHandler(btn) {
 // =======================
 let map;
 let markersLayer;
+let userLocation = null 
+let UserMarker = null 
 
 function escapeHtml(str) {
   return String(str)
@@ -272,7 +274,53 @@ function setupMap() {
   // Markers from user events (storage)
   const userEvents = loadJSON(EVENTS_KEY, []);
   userEvents.forEach(ev => addMarkerFromEvent(ev));
+  setupNearMe();
 }
+
+function setupNearMe() {
+  const select = document.querySelector('.controls select'); 
+  // Nota: se hai più select, meglio dare un id. Per ora prendiamo la prima (Zona).
+  if (!select) return;
+
+  // Quando scegli "Vicino a me"
+  select.addEventListener('change', async () => {
+    const value = select.value;
+    if (!value.toLowerCase().includes('vicino')) return;
+
+    // Chiedi geolocalizzazione
+    if (!navigator.geolocation) {
+      alert('Geolocalizzazione non disponibile su questo dispositivo.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+        // centra mappa
+        map.setView([userLocation.lat, userLocation.lng], 14);
+
+        // marker utente
+        if (userMarker) {
+          userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+        } else {
+          userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
+            radius: 8
+          }).addTo(map);
+          userMarker.bindPopup('Tu sei qui').openPopup();
+        }
+
+        // (Step successivo) potremo ordinare/filtrare gli eventi per distanza
+        alert('Ok: ora ti mostro cosa c’è vicino a te.');
+      },
+      () => {
+        alert('Nessun problema: senza posizione la mappa resta su Milano.');
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+    );
+  });
+}
+
 
 function scrollToEvent(id) {
   const el = document.getElementById(id);
