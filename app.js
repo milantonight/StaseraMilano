@@ -80,8 +80,6 @@ function attachAttendHandler(btn) {
 
     this.textContent = 'Ci sei ✔';
     this.classList.add('active');
-    this.style.borderColor = '#0a7';
-    this.style.color = '#0a7';
 
     const state = loadJSON(ATTEND_KEY, {});
     state[eventId] = { count, active: true };
@@ -342,7 +340,7 @@ function applySoloFilter(on) {
       text.includes('principianti') ||
       text.includes('tranquillo') ||
       text.includes('easy');
-
+      text.includes('Aperto a tutti');
     card.hidden = !ok;
   });
 }
@@ -409,6 +407,9 @@ function setupCreateEventButton() {
   const btn = document.getElementById('createEventBtn');
   if (!btn) return;
   btn.addEventListener('click', openCreateEventDialog);
+  const cancelBtn = document.getElementById('cancelCreateBtn');
+  if (cancelBtn) cancelBtn.addEventListener('click', disableMapPickMode);
+
 }
 
 function openCreateEventDialog() {
@@ -453,6 +454,8 @@ function enableMapPickMode() {
     map.off('click', pendingClickHandler);
     pendingClickHandler = null;
   }
+  const cancelBtn = document.getElementById('cancelCreateBtn');
+  if (cancelBtn) cancelBtn.hidden = false;
 
   const btn = document.getElementById('createEventBtn');
   if (btn) btn.textContent = 'Clicca un punto sulla mappa…';
@@ -486,6 +489,9 @@ function disableMapPickMode() {
     pendingClickHandler = null;
   }
   pendingEventDraft = null;
+    const cancelBtn = document.getElementById('cancelCreateBtn');
+  if (cancelBtn) cancelBtn.hidden = true;
+
 
   const btn = document.getElementById('createEventBtn');
   if (btn) btn.textContent = '+ Crea un evento';
@@ -502,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupMap();
   setupUserEventsFromStorage();
   setupCreateEventButton();
-
+  setupSolomode();
   // Se vuoi che chieda subito la posizione e vada al più vicino:
   requestUserLocationImmediately(true);
 });
