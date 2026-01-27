@@ -396,7 +396,9 @@ function setupUserEventsFromStorage() {
 
   // bind attendance handlers for new cards
   grid.querySelectorAll('.attend-btn').forEach(btn => attachAttendHandler(btn));
+   updateDistanceBadges();
 }
+   
 
 function buildUserEventCard(ev) {
   const card = document.createElement('article');
@@ -513,6 +515,8 @@ function enableMapPickMode() {
   };
 
   map.on('click', pendingClickHandler);
+   updateDistanceBadges();
+  
 }
 
 function disableMapPickMode() {
