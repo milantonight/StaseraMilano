@@ -363,6 +363,7 @@ function addMarkerFromCard(card) {
   `;
 
   const marker = L.marker([lat, lng]).addTo(markersLayer);
+  markerByEventId.set(id, marker);
   marker.bindPopup(popupHtml);
   marker.on('popupopen', () => {
     const btn = document.querySelector(`button[data-jump="${id}"]`);
@@ -398,6 +399,7 @@ function addMarkerFromEvent(ev) {
   `;
 
   const marker = L.marker([lat, lng]).addTo(markersLayer);
+  markerByEventId.set(id, marker);
   marker.bindPopup(popupHtml);
   marker.on('popupopen', () => {
     const btn = document.querySelector(`button[data-jump="${id}"]`);
