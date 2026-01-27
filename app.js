@@ -84,6 +84,95 @@ function setupMap() {
     attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
+  function distanceMeters(a, b) {
+  // Haversine
+  const R = 6371000;
+  const toRad = (x) => (x * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+
+  const s =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  return R * c;
+}
+
+function getAllEventCards() {
+  return Array.from(document.querySelectorAll('.card')).filter(card => {
+    const lat = parseFloat(card.dataset.lat);
+    const lng = parseFloat(card.dataset.lng);
+    return card.id && !isNaN(lat) && !isNaN(lng);
+  });
+}
+
+function focusNearestEvent() {
+  if (!userLocation || !map) return;
+
+  const cards = getAllEventCards();
+  if (!cards.length) return;
+
+  let best = null;
+  let bestDist = Infinity;
+
+  cards.forEach(card => {
+    const lat = parseFloat(card.dataset.lat);
+    const lng = parseFloat(card.dataset.lng);
+    const d = distanceMeters(userLocation, { lat, lng });
+    if (d < bestDist) {
+      bestDist = d;
+      best = card;
+    }
+  });
+
+  if (!best) return;
+
+  // centra la mappa verso il più vicino
+  const lat = parseFloat(best.dataset.lat);
+  const lng = parseFloat(best.dataset.lng);
+  map.setView([lat, lng], 14);
+
+  // apri popup marker se esiste
+  const marker = markerByEventId.get(best.id);
+  if (marker) marker.openPopup();
+
+  // evidenzia e scrolla
+  scrollToEvent(best.id);
+}
+
+function requestUserLocationImmediately() {
+  if (!navigator.geolocation || !map) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+      // marker "Tu sei qui"
+      if (userMarker) {
+        userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+      } else {
+        userMarker = L.circleMarker([userLocation.lat, userLocation.lng], { radius: 8 })
+          .addTo(map)
+          .bindPopup('Tu sei qui');
+      }
+
+      // centra vicino a user per un attimo
+      map.setView([userLocation.lat, userLocation.lng], 14);
+
+      // vai direttamente all'evento più vicino
+      focusNearestEvent();
+    },
+    () => {
+      // niente panico: restiamo su Milano
+      // (volendo: potremmo mostrare un messaggio non-invasivo più avanti)
+    },
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+
   function scrollToEvent(id) {
     const el = document.getElementById(id);
     if (!el) return;
