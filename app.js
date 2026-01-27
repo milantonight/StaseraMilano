@@ -77,7 +77,7 @@ function setupMap() {
   if (!mapEl || typeof L === 'undefined') return;
 
   // Center Milano (Duomo)
-  const map = L.map('map').setView([45.4642, 9.1900], 13);
+  map = L.map('map').setView([45.4642, 9.1900], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
