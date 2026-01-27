@@ -658,4 +658,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setupMap();
   setupUserEventsFromStorage();
   setupCreateEventButton();
+  requestUserLocationImmediately();
 });
