@@ -441,7 +441,7 @@ function buildUserEventCard(ev) {
     <p class="meta"><span class="count">${escapeHtml(String(ev.initialCount || 0))}</span> persone ci sono</p>
 
     <div class="tags">
-      <span class="tag">🟢 Aperto a chi non si conosce</span>
+      <span class="tag">🟢 Volti Nuovi Benvenuti!</span>
       <span class="tag">${escapeHtml(ev.cost)}</span>
       <span class="tag">${escapeHtml(ev.requirements)}</span>
       <span class="tag">${escapeHtml(ev.distanceHint)}</span>
