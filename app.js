@@ -241,6 +241,10 @@ let map;
 let markersLayer;
 let userLocation = null 
 let UserMarker = null 
+let userLocation = null;     // { lat, lng }
+let userMarker = null;
+const markerByEventId = new Map(); // per aprire popup del più vicino
+
 
 function escapeHtml(str) {
   return String(str)
