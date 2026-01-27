@@ -408,8 +408,11 @@ function buildUserEventCard(ev) {
   return card;
 }
 
+let pendingEventDraft = null;
+let pendingClickHandler = null;
+
 function openCreateEventDialog() {
-  // Minimal “modal” via prompt-style input (V1.1). Semplice e funziona.
+  // 1) Raccogli i dati base (senza coordinate)
   const title = prompt('Titolo evento (es: "Pizza + film", "Corsa easy", "Scacchi al bar")');
   if (!title) return;
 
@@ -419,29 +422,18 @@ function openCreateEventDialog() {
   const place = prompt('Luogo (es: "Darsena", "Parco Sempione", "Isola")');
   if (!place) return;
 
-  const latStr = prompt('Latitudine (es: 45.4526) — per ora manuale', '45.4642');
-  const lngStr = prompt('Longitudine (es: 9.1900) — per ora manuale', '9.1900');
-  const lat = parseFloat(latStr);
-  const lng = parseFloat(lngStr);
-  if (isNaN(lat) || isNaN(lng)) {
-    alert('Coordinate non valide. Riprova con numeri corretti.');
-    return;
-  }
-
   const cost = prompt('Costo (es: "€0" oppure "€5 max")', '€0') || '€0';
   const requirements = prompt('Requisiti (es: "Porta: niente", "Scarpe comode")', 'Porta: niente') || 'Porta: niente';
   const distanceHint = prompt('Etichetta distanza (es: "Facile", "Vicino", "Metro ok")', 'Vicino') || 'Vicino';
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place + ' Milano')}`;
 
-  const id = 'user-' + Date.now();
-  const ev = {
-    id,
+  // 2) Mettiamo in bozza, e chiediamo click su mappa
+  pendingEventDraft = {
+    id: 'user-' + Date.now(),
     title,
     time,
     place,
-    lat,
-    lng,
     cost,
     requirements,
     distanceHint,
@@ -449,20 +441,15 @@ function openCreateEventDialog() {
     initialCount: 0
   };
 
-  // Save
-  const events = loadJSON(EVENTS_KEY, []);
-  events.unshift(ev);
-  saveJSON(EVENTS_KEY, events);
+  if (!map) {
+    alert('La mappa non è pronta. Ricarica la pagina e riprova.');
+    pendingEventDraft = null;
+    return;
+  }
 
-  // Render
-  setupUserEventsFromStorage();
-
-  // Add marker
-  addMarkerFromEvent(ev);
-
-  // Smooth scroll to new card
-  scrollToEvent(id);
+  enableMapPickMode();
 }
+
 
 function setupCreateEventButton() {
   const btn = document.getElementById('createEventBtn');
