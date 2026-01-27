@@ -449,6 +449,61 @@ function openCreateEventDialog() {
 
   enableMapPickMode();
 }
+function enableMapPickMode() {
+  // Evita di attaccare più listener
+  if (pendingClickHandler) {
+    map.off('click', pendingClickHandler);
+    pendingClickHandler = null;
+  }
+
+  // Feedback immediato
+  const btn = document.getElementById('createEventBtn');
+  if (btn) btn.textContent = 'Ora clicca un punto sulla mappa…';
+
+  // Cambia cursore mappa (senza CSS extra)
+  const mapEl = document.getElementById('map');
+  if (mapEl) mapEl.style.cursor = 'crosshair';
+
+  alert('Adesso clicca un punto sulla mappa dove si svolge l’evento.');
+
+  pendingClickHandler = function (e) {
+    const { lat, lng } = e.latlng;
+
+    // Completa bozza con coordinate
+    const ev = { ...pendingEventDraft, lat, lng };
+
+    // Salva
+    const events = loadJSON(EVENTS_KEY, []);
+    events.unshift(ev);
+    saveJSON(EVENTS_KEY, events);
+
+    // Render card + marker
+    setupUserEventsFromStorage();
+    addMarkerFromEvent(ev);
+
+    // Torna “normale”
+    disableMapPickMode();
+
+    // Vai all’evento creato
+    scrollToEvent(ev.id);
+  };
+
+  map.on('click', pendingClickHandler);
+}
+
+function disableMapPickMode() {
+  if (map && pendingClickHandler) {
+    map.off('click', pendingClickHandler);
+    pendingClickHandler = null;
+  }
+  pendingEventDraft = null;
+
+  const btn = document.getElementById('createEventBtn');
+  if (btn) btn.textContent = '+ Crea un evento';
+
+  const mapEl = document.getElementById('map');
+  if (mapEl) mapEl.style.cursor = '';
+}
 
 
 function setupCreateEventButton() {
