@@ -1,24 +1,40 @@
 // =======================
-// Attendance (localStorage)
+// Storage keys
 // =======================
-const STORAGE_KEY = 'staseraMilano_attendance_v1';
+const ATTEND_KEY = 'staseraMilano_attendance_v1';
+const EVENTS_KEY = 'staseraMilano_events_v1';
 
-function loadState() {
+// =======================
+// Helpers: storage
+// =======================
+function loadJSON(key, fallback) {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
   } catch {
-    return {};
+    return fallback;
   }
 }
-
-function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function saveJSON(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
-function setupAttendance() {
-  const state = loadState();
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 
-  // Restore counts + button states from storage
+// =======================
+// Attendance (localStorage)
+// =======================
+function setupAttendance() {
+  const state = loadJSON(ATTEND_KEY, {});
+
+  // Restore counts + button states
   document.querySelectorAll('.card').forEach(card => {
     const id = card.id;
     if (!id) return;
@@ -27,9 +43,8 @@ function setupAttendance() {
     const btn = card.querySelector('.attend-btn');
     if (!countSpan || !btn) return;
 
-    if (state[id]?.count !== undefined) {
-      countSpan.textContent = state[id].count;
-    }
+    if (state[id]?.count !== undefined) countSpan.textContent = state[id].count;
+
     if (state[id]?.active) {
       btn.textContent = 'Ci sei ✔';
       btn.classList.add('active');
@@ -38,45 +53,57 @@ function setupAttendance() {
     }
   });
 
-  // Click handler
-  document.querySelectorAll('.attend-btn').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
+  // Bind handlers
+  document.querySelectorAll('.attend-btn').forEach(btn => attachAttendHandler(btn));
+}
 
-      const eventId = this.dataset.event;
-      if (!eventId) return;
-      if (this.classList.contains('active')) return;
+function attachAttendHandler(btn) {
+  if (btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
 
-      const card = document.getElementById(eventId);
-      if (!card) return;
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
 
-      const countSpan = card.querySelector('.count');
-      let count = parseInt(countSpan.textContent, 10);
-      if (isNaN(count)) count = 0;
+    const eventId = this.dataset.event;
+    if (!eventId) return;
+    if (this.classList.contains('active')) return;
 
-      count += 1;
-      countSpan.textContent = count;
+    const card = document.getElementById(eventId);
+    if (!card) return;
 
-      this.textContent = 'Ci sei ✔';
-      this.classList.add('active');
-      this.style.borderColor = '#0a7';
-      this.style.color = '#0a7';
+    const countSpan = card.querySelector('.count');
+    let count = parseInt(countSpan?.textContent || '0', 10);
+    if (isNaN(count)) count = 0;
 
-      const next = loadState();
-      next[eventId] = { count, active: true };
-      saveState(next);
-    });
+    count += 1;
+    if (countSpan) countSpan.textContent = count;
+
+    this.textContent = 'Ci sei ✔';
+    this.classList.add('active');
+    this.style.borderColor = '#0a7';
+    this.style.color = '#0a7';
+
+    const state = loadJSON(ATTEND_KEY, {});
+    state[eventId] = { count, active: true };
+    saveJSON(ATTEND_KEY, state);
   });
 }
 
 // =======================
 // Map (Leaflet + OSM)
 // =======================
+let map = null;
+let markersLayer = null;
+
+let userLocation = null;     // { lat, lng }
+let userMarker = null;
+
+const markerByEventId = new Map(); // eventId -> marker
+
 function setupMap() {
   const mapEl = document.getElementById('map');
   if (!mapEl || typeof L === 'undefined') return;
 
-  // Center Milano (Duomo)
   map = L.map('map').setView([45.4642, 9.1900], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -84,8 +111,146 @@ function setupMap() {
     attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
-  function distanceMeters(a, b) {
-  // Haversine
+  markersLayer = L.layerGroup().addTo(map);
+
+  // Static markers from DOM cards
+  document.querySelectorAll('.card').forEach(card => {
+    // Se in futuro vuoi distinguere eventi “user”, lo fai con card.dataset.user === '1'
+    addMarkerFromCard(card);
+  });
+
+  // User events from storage
+  const userEvents = loadJSON(EVENTS_KEY, []);
+  userEvents.forEach(ev => addMarkerFromEvent(ev));
+
+  setupNearMeSelect();
+}
+
+function addMarkerFromCard(card) {
+  if (!markersLayer) return;
+
+  const id = card.id;
+  const lat = parseFloat(card.dataset.lat);
+  const lng = parseFloat(card.dataset.lng);
+  const place = card.dataset.place || '';
+  const mapsUrl = card.dataset.maps || '#';
+  if (!id || isNaN(lat) || isNaN(lng)) return;
+
+  const title = card.querySelector('.title')?.textContent || 'Evento';
+  const meta = card.querySelector('.meta')?.textContent || '';
+
+  const popupHtml = `
+    <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
+      <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(title)}</div>
+      <div style="color:#555;margin-bottom:8px;">${escapeHtml(meta)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button data-jump="${id}" style="padding:8px 10px;border:1px solid #111;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;">
+          Vedi dettagli
+        </button>
+        <a href="${mapsUrl}" target="_blank" rel="noreferrer"
+           style="display:inline-block;padding:8px 10px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;">
+          Apri su Maps
+        </a>
+      </div>
+      <div style="margin-top:8px;color:#555;font-size:12px;">${escapeHtml(place)}</div>
+    </div>
+  `;
+
+  const marker = L.marker([lat, lng]).addTo(markersLayer);
+  markerByEventId.set(id, marker);
+  marker.bindPopup(popupHtml);
+  marker.on('popupopen', () => {
+    const btn = document.querySelector(`button[data-jump="${id}"]`);
+    if (btn) btn.onclick = () => scrollToEvent(id);
+  });
+}
+
+function addMarkerFromEvent(ev) {
+  if (!markersLayer || !ev) return;
+
+  const id = ev.id;
+  const lat = Number(ev.lat);
+  const lng = Number(ev.lng);
+  if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+  const mapsUrl = ev.mapsUrl || '#';
+  const place = ev.place || '';
+  const title = ev.title || 'Evento';
+  const meta = `${ev.time || 'Stasera'} • ${place}`;
+
+  const popupHtml = `
+    <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
+      <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(title)}</div>
+      <div style="color:#555;margin-bottom:8px;">${escapeHtml(meta)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button data-jump="${id}" style="padding:8px 10px;border:1px solid #111;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;">
+          Vedi dettagli
+        </button>
+        <a href="${mapsUrl}" target="_blank" rel="noreferrer"
+           style="display:inline-block;padding:8px 10px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;">
+          Apri su Maps
+        </a>
+      </div>
+      <div style="margin-top:8px;color:#555;font-size:12px;">${escapeHtml(place)}</div>
+    </div>
+  `;
+
+  const marker = L.marker([lat, lng]).addTo(markersLayer);
+  markerByEventId.set(id, marker);
+  marker.bindPopup(popupHtml);
+  marker.on('popupopen', () => {
+    const btn = document.querySelector(`button[data-jump="${id}"]`);
+    if (btn) btn.onclick = () => scrollToEvent(id);
+  });
+}
+
+function scrollToEvent(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.style.outline = '2px solid #111';
+  setTimeout(() => (el.style.outline = 'none'), 1200);
+}
+
+function setupNearMeSelect() {
+  const select = document.querySelector('.controls select');
+  if (!select || !map) return;
+
+  select.addEventListener('change', () => {
+    const value = String(select.value || '');
+    if (!value.toLowerCase().includes('vicino')) return;
+
+    requestUserLocationImmediately(true);
+  });
+}
+
+function requestUserLocationImmediately(focusNearest = false) {
+  if (!navigator.geolocation || !map) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+      if (userMarker) {
+        userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+      } else {
+        userMarker = L.circleMarker([userLocation.lat, userLocation.lng], { radius: 8 })
+          .addTo(map)
+          .bindPopup('Tu sei qui');
+      }
+
+      map.setView([userLocation.lat, userLocation.lng], 14);
+
+      if (focusNearest) focusNearestEvent();
+    },
+    () => {
+      // niente panico: restiamo su Milano
+    },
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+function distanceMeters(a, b) {
   const R = 6371000;
   const toRad = (x) => (x * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
@@ -129,371 +294,14 @@ function focusNearestEvent() {
 
   if (!best) return;
 
-  // centra la mappa verso il più vicino
   const lat = parseFloat(best.dataset.lat);
   const lng = parseFloat(best.dataset.lng);
   map.setView([lat, lng], 14);
 
-  // apri popup marker se esiste
   const marker = markerByEventId.get(best.id);
   if (marker) marker.openPopup();
 
-  // evidenzia e scrolla
   scrollToEvent(best.id);
-}
-
-function requestUserLocationImmediately() {
-  if (!navigator.geolocation || !map) return;
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-
-      // marker "Tu sei qui"
-      if (userMarker) {
-        userMarker.setLatLng([userLocation.lat, userLocation.lng]);
-      } else {
-        userMarker = L.circleMarker([userLocation.lat, userLocation.lng], { radius: 8 })
-          .addTo(map)
-          .bindPopup('Tu sei qui');
-      }
-
-      // centra vicino a user per un attimo
-      map.setView([userLocation.lat, userLocation.lng], 14);
-
-      // vai direttamente all'evento più vicino
-      focusNearestEvent();
-    },
-    () => {
-      // niente panico: restiamo su Milano
-      // (volendo: potremmo mostrare un messaggio non-invasivo più avanti)
-    },
-    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
-  );
-}
-
-
-  function scrollToEvent(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    el.style.outline = '2px solid #111';
-    setTimeout(() => (el.style.outline = 'none'), 1200);
-  }
-
-  // Build markers from DOM cards (so you edit events in one place)
-  document.querySelectorAll('.card').forEach(card => {
-    const id = card.id;
-    const lat = parseFloat(card.dataset.lat);
-    const lng = parseFloat(card.dataset.lng);
-    const place = card.dataset.place || '';
-    const mapsUrl = card.dataset.maps || '#';
-
-    if (!id || isNaN(lat) || isNaN(lng)) return;
-
-    const titleEl = card.querySelector('.title');
-    const metaEl = card.querySelector('.meta');
-    const title = titleEl ? titleEl.textContent : 'Evento';
-    const meta = metaEl ? metaEl.textContent : '';
-
-    const popupHtml = `
-      <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
-        <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(title)}</div>
-        <div style="color:#555;margin-bottom:8px;">${escapeHtml(meta)}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button data-jump="${id}" style="padding:8px 10px;border:1px solid #111;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;">
-            Vedi dettagli
-          </button>
-          <a href="${mapsUrl}" target="_blank" rel="noreferrer"
-             style="display:inline-block;padding:8px 10px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;">
-            Apri su Maps
-          </a>
-        </div>
-        <div style="margin-top:8px;color:#555;font-size:12px;">${escapeHtml(place)}</div>
-      </div>
-    `;
-
-    const marker = L.marker([lat, lng]).addTo(map);
-    marker.bindPopup(popupHtml);
-
-    marker.on('popupopen', () => {
-      const btn = document.querySelector(`button[data-jump="${id}"]`);
-      if (btn) btn.onclick = () => scrollToEvent(id);
-    });
-  });
-
-  // Tiny HTML escape (for safety in popup)
-  function escapeHtml(str) {
-    return String(str)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-}
-
-
-// =======================
-// Init
-// =======================
-document.addEventListener('DOMContentLoaded', () => {
-  setupAttendance();
-  setupMap();
-  setupCreateEventButton()
-});
-// =======================
-// Storage keys
-// =======================
-const ATTEND_KEY = 'staseraMilano_attendance_v1';
-const EVENTS_KEY = 'staseraMilano_events_v1';
-
-// =======================
-// Helpers: storage
-// =======================
-function loadJSON(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-function saveJSON(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-// =======================
-// Attendance (localStorage)
-// =======================
-function setupAttendance() {
-  const state = loadJSON(ATTEND_KEY, {});
-
-  // Restore counts + button states from storage
-  document.querySelectorAll('.card').forEach(card => {
-    const id = card.id;
-    if (!id) return;
-
-    const countSpan = card.querySelector('.count');
-    const btn = card.querySelector('.attend-btn');
-    if (!countSpan || !btn) return;
-
-    if (state[id]?.count !== undefined) countSpan.textContent = state[id].count;
-    if (state[id]?.active) {
-      btn.textContent = 'Ci sei ✔';
-      btn.classList.add('active');
-      btn.style.borderColor = '#0a7';
-      btn.style.color = '#0a7';
-    }
-  });
-
-  // Click handler (delegate-safe: we attach per button after render too)
-  document.querySelectorAll('.attend-btn').forEach(btn => attachAttendHandler(btn));
-}
-
-function attachAttendHandler(btn) {
-  if (btn.dataset.bound === '1') return;
-  btn.dataset.bound = '1';
-
-  btn.addEventListener('click', function (e) {
-    e.preventDefault();
-
-    const eventId = this.dataset.event;
-    if (!eventId) return;
-    if (this.classList.contains('active')) return;
-
-    const card = document.getElementById(eventId);
-    if (!card) return;
-
-    const countSpan = card.querySelector('.count');
-    let count = parseInt(countSpan.textContent, 10);
-    if (isNaN(count)) count = 0;
-
-    count += 1;
-    countSpan.textContent = count;
-
-    this.textContent = 'Ci sei ✔';
-    this.classList.add('active');
-    this.style.borderColor = '#0a7';
-    this.style.color = '#0a7';
-
-    const state = loadJSON(ATTEND_KEY, {});
-    state[eventId] = { count, active: true };
-    saveJSON(ATTEND_KEY, state);
-  });
-}
-
-// =======================
-// Map (Leaflet + OSM)
-// =======================
-let map;
-let markersLayer;
-let userLocation = null 
-let UserMarker = null 
-let userLocation = null;     // { lat, lng }
-let userMarker = null;
-const markerByEventId = new Map(); // per aprire popup del più vicino
-
-
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-function setupMap() {
-  const mapEl = document.getElementById('map');
-  if (!mapEl || typeof L === 'undefined') return;
-
-  map = L.map('map').setView([45.4642, 9.1900], 13);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-
-  markersLayer = L.layerGroup().addTo(map);
-
-  // Markers from static cards
-  document.querySelectorAll('.card').forEach(card => {
-    const isUser = card.dataset.user === '1';
-    // We will add user events separately
-    if (!isUser) addMarkerFromCard(card);
-  });
-
-  // Markers from user events (storage)
-  const userEvents = loadJSON(EVENTS_KEY, []);
-  userEvents.forEach(ev => addMarkerFromEvent(ev));
-  setupNearMe();
-}
-
-function setupNearMe() {
-  const select = document.querySelector('.controls select'); 
-  // Nota: se hai più select, meglio dare un id. Per ora prendiamo la prima (Zona).
-  if (!select) return;
-
-  // Quando scegli "Vicino a me"
-  select.addEventListener('change', async () => {
-    const value = select.value;
-    if (!value.toLowerCase().includes('vicino')) return;
-
-    // Chiedi geolocalizzazione
-    if (!navigator.geolocation) {
-      alert('Geolocalizzazione non disponibile su questo dispositivo.');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-
-        // centra mappa
-        map.setView([userLocation.lat, userLocation.lng], 14);
-
-        // marker utente
-        if (userMarker) {
-          userMarker.setLatLng([userLocation.lat, userLocation.lng]);
-        } else {
-          userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
-            radius: 8
-          }).addTo(map);
-          userMarker.bindPopup('Tu sei qui').openPopup();
-        }
-
-        // (Step successivo) potremo ordinare/filtrare gli eventi per distanza
-        alert('Ok: ora ti mostro cosa c’è vicino a te.');
-      },
-      () => {
-        alert('Nessun problema: senza posizione la mappa resta su Milano.');
-      },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
-    );
-  });
-}
-
-
-function scrollToEvent(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  el.style.outline = '2px solid #111';
-  setTimeout(() => (el.style.outline = 'none'), 1200);
-}
-
-function addMarkerFromCard(card) {
-  const id = card.id;
-  const lat = parseFloat(card.dataset.lat);
-  const lng = parseFloat(card.dataset.lng);
-  const place = card.dataset.place || '';
-  const mapsUrl = card.dataset.maps || '#';
-  if (!id || isNaN(lat) || isNaN(lng) || !markersLayer) return;
-
-  const title = card.querySelector('.title')?.textContent || 'Evento';
-  const meta = card.querySelector('.meta')?.textContent || '';
-
-  const popupHtml = `
-    <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
-      <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(title)}</div>
-      <div style="color:#555;margin-bottom:8px;">${escapeHtml(meta)}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button data-jump="${id}" style="padding:8px 10px;border:1px solid #111;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;">
-          Vedi dettagli
-        </button>
-        <a href="${mapsUrl}" target="_blank" rel="noreferrer"
-           style="display:inline-block;padding:8px 10px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;">
-          Apri su Maps
-        </a>
-      </div>
-      <div style="margin-top:8px;color:#555;font-size:12px;">${escapeHtml(place)}</div>
-    </div>
-  `;
-
-  const marker = L.marker([lat, lng]).addTo(markersLayer);
-  markerByEventId.set(id, marker);
-  marker.bindPopup(popupHtml);
-  marker.on('popupopen', () => {
-    const btn = document.querySelector(`button[data-jump="${id}"]`);
-    if (btn) btn.onclick = () => scrollToEvent(id);
-  });
-}
-
-function addMarkerFromEvent(ev) {
-  if (!markersLayer) return;
-  const id = ev.id;
-  const lat = ev.lat;
-  const lng = ev.lng;
-  const mapsUrl = ev.mapsUrl;
-  const place = ev.place || '';
-  const title = ev.title || 'Evento';
-  const meta = `${ev.time || 'Stasera'} • ${place}`;
-
-  const popupHtml = `
-    <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
-      <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(title)}</div>
-      <div style="color:#555;margin-bottom:8px;">${escapeHtml(meta)}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button data-jump="${id}" style="padding:8px 10px;border:1px solid #111;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;">
-          Vedi dettagli
-        </button>
-        <a href="${mapsUrl}" target="_blank" rel="noreferrer"
-           style="display:inline-block;padding:8px 10px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;">
-          Apri su Maps
-        </a>
-      </div>
-      <div style="margin-top:8px;color:#555;font-size:12px;">${escapeHtml(place)}</div>
-    </div>
-  `;
-
-  const marker = L.marker([lat, lng]).addTo(markersLayer);
-  markerByEventId.set(id, marker);
-  marker.bindPopup(popupHtml);
-  marker.on('popupopen', () => {
-    const btn = document.querySelector(`button[data-jump="${id}"]`);
-    if (btn) btn.onclick = () => scrollToEvent(id);
-  });
 }
 
 // =======================
@@ -512,9 +320,7 @@ function setupUserEventsFromStorage() {
 
   section.hidden = false;
   grid.innerHTML = '';
-  events.forEach(ev => {
-    grid.appendChild(buildUserEventCard(ev));
-  });
+  events.forEach(ev => grid.appendChild(buildUserEventCard(ev)));
 
   // bind attendance handlers for new cards
   grid.querySelectorAll('.attend-btn').forEach(btn => attachAttendHandler(btn));
@@ -524,6 +330,7 @@ function buildUserEventCard(ev) {
   const card = document.createElement('article');
   card.className = 'card';
   card.id = ev.id;
+
   card.dataset.user = '1';
   card.dataset.lat = ev.lat;
   card.dataset.lng = ev.lng;
@@ -537,9 +344,9 @@ function buildUserEventCard(ev) {
 
     <div class="tags">
       <span class="tag">🟢 Volti Nuovi Benvenuti!</span>
-      <span class="tag">${escapeHtml(ev.cost)}</span>
-      <span class="tag">${escapeHtml(ev.requirements)}</span>
-      <span class="tag">${escapeHtml(ev.distanceHint)}</span>
+      <span class="tag">${escapeHtml(ev.cost || '€0')}</span>
+      <span class="tag">${escapeHtml(ev.requirements || 'Porta: niente')}</span>
+      <span class="tag">${escapeHtml(ev.distanceHint || 'Vicino')}</span>
     </div>
 
     <div class="cta">
@@ -553,6 +360,12 @@ function buildUserEventCard(ev) {
 
 let pendingEventDraft = null;
 let pendingClickHandler = null;
+
+function setupCreateEventButton() {
+  const btn = document.getElementById('createEventBtn');
+  if (!btn) return;
+  btn.addEventListener('click', openCreateEventDialog);
+}
 
 function openCreateEventDialog() {
   const title = prompt('Titolo evento (es: "Pizza + film", "Corsa easy", "Scacchi al bar")');
@@ -592,7 +405,6 @@ function openCreateEventDialog() {
 }
 
 function enableMapPickMode() {
-  // Rimuovi eventuale handler precedente
   if (pendingClickHandler) {
     map.off('click', pendingClickHandler);
     pendingClickHandler = null;
@@ -610,19 +422,14 @@ function enableMapPickMode() {
     const { lat, lng } = e.latlng;
     const ev = { ...pendingEventDraft, lat, lng };
 
-    // Salva evento (local-only)
     const events = loadJSON(EVENTS_KEY, []);
     events.unshift(ev);
     saveJSON(EVENTS_KEY, events);
 
-    // Render + marker
     setupUserEventsFromStorage();
     addMarkerFromEvent(ev);
 
-    // Reset modalità
     disableMapPickMode();
-
-    // Vai all’evento creato
     scrollToEvent(ev.id);
   };
 
@@ -643,20 +450,16 @@ function disableMapPickMode() {
   if (mapEl) mapEl.style.cursor = '';
 }
 
-
-function setupCreateEventButton() {
-  const btn = document.getElementById('createEventBtn');
-  if (!btn) return;
-  btn.addEventListener('click', () => openCreateEventDialog());
-}
-
 // =======================
-// Init
+// Init (UNA volta sola)
 // =======================
 document.addEventListener('DOMContentLoaded', () => {
   setupAttendance();
   setupMap();
   setupUserEventsFromStorage();
   setupCreateEventButton();
-  requestUserLocationImmediately();
+
+  // Se vuoi che chieda subito la posizione e vada al più vicino:
+  requestUserLocationImmediately(true);
 });
+
