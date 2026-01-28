@@ -254,6 +254,8 @@ function requestUserLocationImmediately(focusNearest = false) {
     },
     { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
   );
+  updateDistanceBadges();
+
 }
 
 
