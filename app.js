@@ -223,10 +223,17 @@ function setupNearMeSelect() {
 }
 
 function requestUserLocationImmediately(focusNearest = false) {
-  if (!navigator.geolocation || !map) return;
+  if (!navigator.geolocation || !map) {
+    console.log('[geo] geolocation o map non disponibili', { hasGeo: !!navigator.geolocation, hasMap: !!map });
+    return;
+  }
+
+  console.log('[geo] richiesta posizione...');
 
   navigator.geolocation.getCurrentPosition(
     (pos) => {
+      console.log('[geo] OK', pos.coords);
+
       userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 
       if (userMarker) {
@@ -238,16 +245,17 @@ function requestUserLocationImmediately(focusNearest = false) {
       }
 
       map.setView([userLocation.lat, userLocation.lng], 14);
-      updateDistanceBadges();
 
       if (focusNearest) focusNearestEvent();
     },
-    () => {
+    (err) => {
+      console.log('[geo] ERRORE', err.code, err.message);
       // niente panico: restiamo su Milano
     },
     { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
   );
 }
+
 
 function distanceMeters(a, b) {
   const R = 6371000;
