@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupMap();
   setupUserEventsFromStorage();
   setupCreateEventButton();
-  setupSolomode();
+  setupSoloMode();
   // Se vuoi che chieda subito la posizione e vada al più vicino:
   requestUserLocationImmediately(true);
 });
