@@ -285,8 +285,10 @@ function estimateWalkMinutes(meters) {
 
 function updateDistanceBadges() {
   if (!userLocation) return;
+  console.log('[dist] updateDistanceBadges chiamata, userLocation=', userLocation);
 
   const cards = getAllEventCards();
+  
   cards.forEach(card => {
     const lat = parseFloat(card.dataset.lat);
     const lng = parseFloat(card.dataset.lng);
@@ -298,6 +300,8 @@ function updateDistanceBadges() {
     const mins = estimateWalkMinutes(d);
     distEl.textContent = `📍 ${formatDistance(d)} • ~${mins} min a piedi`;
   });
+  console.log('[dist] cards=', cards.length, 'badges=', document.querySelectorAll('[data-distance]').length);
+
 }
 
 
